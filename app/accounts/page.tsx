@@ -153,6 +153,7 @@ async function AccountsContent() {
                                 </div>
 
 
+
                                 <div className="mt-6 flex flex-wrap items-center gap-3">
                                     <Link
                                         href={`/transactions?account=${encodeURIComponent(
@@ -169,7 +170,15 @@ async function AccountsContent() {
                                     >
                                         Edit Account
                                     </Link>
+
+                                    <Link
+                                        href={`/accounts/${account.id}/delete`}
+                                        className="inline-flex rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50"
+                                    >
+                                        Delete Account
+                                    </Link>
                                 </div>
+
 
                             </div>
                         ))}
