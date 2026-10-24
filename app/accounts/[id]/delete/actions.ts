@@ -14,20 +14,18 @@ export async function deleteAccount(
         formData.get("confirmation") ?? "",
     );
 
-    // Require explicit confirmation from the form.
     if (confirmation !== "DELETE") {
-        throw new Error("Account deletion was not confirmed.");
+        throw new Error(
+            "Account deletion was not confirmed.",
+        );
     }
 
-    // Validate the account ID.
     if (!accountId || typeof accountId !== "string") {
         throw new Error("Invalid account ID.");
     }
 
-    // Perform all checks and deletion atomically.
     await prisma.$transaction(
         async (tx) => {
-            // Find the demo user.
             const demoUser = await tx.user.findUnique({
                 where: {
                     email: "demo@spendwise.local",
@@ -41,7 +39,6 @@ export async function deleteAccount(
                 throw new Error("Demo user not found.");
             }
 
-            // Find the account belonging to the demo user.
             const account = await tx.account.findFirst({
                 where: {
                     id: accountId,
@@ -57,38 +54,52 @@ export async function deleteAccount(
                 throw new Error("Account not found.");
             }
 
-            // Prevent deleting an account with transactions.
+            // Check all transactions involving this account,
+            // including transfers received from another account.
             const transactionCount = await tx.transaction.count({
                 where: {
-                    accountId: account.id,
+                    userId: demoUser.id,
+                    OR: [
+                        {
+                            accountId: account.id,
+                        },
+                        {
+                            toAccountId: account.id,
+                        },
+                    ],
                 },
             });
 
             if (transactionCount > 0) {
                 throw new Error(
-                    "This account has existing transactions and cannot be deleted.",
+                    "This account has existing transactions or transfers and cannot be deleted.",
                 );
             }
 
-            // Delete only the verified account.
-            await tx.account.delete({
+            // Delete only an account with no transaction history.
+            const result = await tx.account.deleteMany({
                 where: {
                     id: account.id,
+                    userId: demoUser.id,
                 },
             });
+
+            if (result.count !== 1) {
+                throw new Error("Account could not be deleted.");
+            }
         },
         {
-            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+            isolationLevel:
+            Prisma.TransactionIsolationLevel.Serializable,
         },
     );
 
-    // Refresh pages displaying account information.
     revalidatePath("/");
     revalidatePath("/accounts");
     revalidatePath("/transactions");
     revalidatePath("/transactions/new");
+    revalidatePath("/transfers/new");
     revalidatePath("/accounts/new");
 
-    // Return to the Accounts page.
     redirect("/accounts");
 }

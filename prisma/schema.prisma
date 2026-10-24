@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,11 +14,11 @@ enum TransactionType {
 }
 
 model User {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String?
-  email     String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   accounts     Account[]
   transactions Transaction[]
@@ -34,9 +33,14 @@ model Account {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userId       String
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Income, expenses, and outgoing transfers
+  transactions Transaction[] @relation("SourceAccount")
+
+  // Incoming transfers
+  incomingTransfers Transaction[] @relation("DestinationAccount")
 
   @@index([userId])
 }
@@ -52,11 +56,18 @@ model Transaction {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Source account
   accountId String
-  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account   Account @relation("SourceAccount", fields: [accountId], references: [id], onDelete: Cascade)
+
+  // Destination account (only used for transfers)
+  toAccountId String?
+  toAccount   Account? @relation("DestinationAccount", fields: [toAccountId], references: [id], onDelete: Restrict)
 
   @@index([userId, date])
   @@index([accountId, date])
+  @@index([toAccountId, date])
 }

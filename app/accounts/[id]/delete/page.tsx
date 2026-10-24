@@ -33,21 +33,29 @@ async function DeleteAccountConfirmation({
                 email: "demo@spendwise.local",
             },
         },
-        include: {
-            _count: {
-                select: {
-                    transactions: true,
-                },
-            },
-        },
     });
 
     if (!account) {
         notFound();
     }
 
-    const hasTransactions =
-        account._count.transactions > 0;
+    // Count every transaction involving this account.
+    // This includes outgoing transactions and incoming transfers.
+    const transactionCount = await prisma.transaction.count({
+        where: {
+            userId: account.userId,
+            OR: [
+                {
+                    accountId: account.id,
+                },
+                {
+                    toAccountId: account.id,
+                },
+            ],
+        },
+    });
+
+    const hasTransactions = transactionCount > 0;
 
     const deleteAction = deleteAccount.bind(
         null,
@@ -113,33 +121,35 @@ async function DeleteAccountConfirmation({
 
                     <div className="flex justify-between gap-4 border-t border-slate-200 pt-4">
             <span className="text-sm text-slate-500">
-              Transactions
+              Transactions and transfers
             </span>
 
                         <span className="text-sm font-semibold">
-              {account._count.transactions}
+              {transactionCount}
             </span>
                     </div>
                 </div>
 
                 {hasTransactions ? (
                     <>
-                        {/* Block deletion when transactions exist */}
+                        {/* Deletion blocked */}
                         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
                             <h3 className="text-sm font-bold text-amber-900">
                                 This account cannot be deleted
                             </h3>
 
                             <p className="mt-2 text-sm leading-6 text-amber-800">
-                                This account has{" "}
-                                {account._count.transactions} existing
+                                This account is involved in{" "}
+                                <strong>
+                                    {transactionCount}
+                                </strong>{" "}
                                 transaction
-                                {account._count.transactions === 1
-                                    ? ""
-                                    : "s"}
-                                . To protect your financial history,
+                                {transactionCount === 1 ? "" : "s"} or
+                                transfer
+                                {transactionCount === 1 ? "" : "s"}.
+                                To protect your financial history,
                                 Spendwise does not allow deleting
-                                accounts with transactions.
+                                accounts with existing financial activity.
                             </p>
                         </div>
 
@@ -163,15 +173,16 @@ async function DeleteAccountConfirmation({
                     </>
                 ) : (
                     <>
-                        {/* Confirmation form */}
+                        {/* Deletion permitted */}
                         <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5">
                             <h3 className="text-sm font-bold text-red-900">
                                 Permanent deletion
                             </h3>
 
                             <p className="mt-2 text-sm leading-6 text-red-800">
-                                This account has no transactions and
-                                can be deleted. Its current balance of{" "}
+                                This account has no transactions or
+                                transfers and can be deleted. Its current
+                                balance of{" "}
                                 <strong>
                                     {formatMoney(
                                         account.balance.toString(),

@@ -49,33 +49,63 @@ async function TransactionsContent({
             ? (type as TransactionType)
             : undefined;
 
+    // Each filter is combined with AND.
+    // OR is used only within the search and account conditions.
     const where: Prisma.TransactionWhereInput = {
         user: {
             email: "demo@spendwise.local",
         },
 
-        ...(search
-            ? {
-                OR: [
+        AND: [
+            // Search by title OR category.
+            ...(search
+                ? [
                     {
-                        title: {
-                            contains: search,
-                            mode: Prisma.QueryMode.insensitive,
-                        },
+                        OR: [
+                            {
+                                title: {
+                                    contains: search,
+                                    mode: Prisma.QueryMode.insensitive,
+                                },
+                            },
+                            {
+                                category: {
+                                    contains: search,
+                                    mode: Prisma.QueryMode.insensitive,
+                                },
+                            },
+                        ],
                     },
+                ]
+                : []),
+
+            // Filter by transaction type.
+            ...(validType
+                ? [
                     {
-                        category: {
-                            contains: search,
-                            mode: Prisma.QueryMode.insensitive,
-                        },
+                        type: validType,
                     },
-                ],
-            }
-            : {}),
+                ]
+                : []),
 
-        ...(validType ? { type: validType } : {}),
-
-        ...(accountId !== "ALL" ? { accountId } : {}),
+            // Match transactions involving the selected account.
+            // For transfers, check both source and destination.
+            ...(accountId !== "ALL"
+                ? [
+                    {
+                        OR: [
+                            {
+                                accountId,
+                            },
+                            {
+                                type: TransactionType.TRANSFER,
+                                toAccountId: accountId,
+                            },
+                        ],
+                    },
+                ]
+                : []),
+        ],
     };
 
     const [accounts, transactions] = await Promise.all([
@@ -107,10 +137,17 @@ async function TransactionsContent({
                         currency: true,
                     },
                 },
+                toAccount: {
+                    select: {
+                        name: true,
+                        currency: true,
+                    },
+                },
             },
         }),
     ]);
 
+    // Transfers do not count as income.
     const income = transactions
         .filter(
             (transaction) => transaction.type === "INCOME",
@@ -121,6 +158,7 @@ async function TransactionsContent({
             0,
         );
 
+    // Transfers do not count as expenses.
     const expenses = transactions
         .filter(
             (transaction) => transaction.type === "EXPENSE",
@@ -139,6 +177,7 @@ async function TransactionsContent({
                 method="GET"
                 className="mt-8 grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:grid-cols-2 lg:grid-cols-4"
             >
+                {/* Search */}
                 <div>
                     <label
                         htmlFor="search"
@@ -157,6 +196,7 @@ async function TransactionsContent({
                     />
                 </div>
 
+                {/* Transaction type */}
                 <div>
                     <label
                         htmlFor="type"
@@ -178,6 +218,7 @@ async function TransactionsContent({
                     </select>
                 </div>
 
+                {/* Account */}
                 <div>
                     <label
                         htmlFor="account"
@@ -211,6 +252,7 @@ async function TransactionsContent({
                     </select>
                 </div>
 
+                {/* Filter actions */}
                 <div className="flex items-end gap-2">
                     <button
                         type="submit"
@@ -230,6 +272,7 @@ async function TransactionsContent({
 
             {/* Summary cards */}
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {/* Transaction count */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-5">
                     <p className="text-sm text-slate-500">
                         Matching transactions
@@ -240,6 +283,7 @@ async function TransactionsContent({
                     </p>
                 </div>
 
+                {/* Income */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-5">
                     <p className="text-sm text-slate-500">
                         Filtered income
@@ -250,6 +294,7 @@ async function TransactionsContent({
                     </p>
                 </div>
 
+                {/* Expenses */}
                 <div className="rounded-2xl border border-slate-200 bg-white p-5">
                     <p className="text-sm text-slate-500">
                         Filtered expenses
@@ -329,18 +374,28 @@ async function TransactionsContent({
                                 const isTransfer =
                                     transaction.type === "TRANSFER";
 
+                                const accountDisplay = isTransfer
+                                    ? `${transaction.account.name} → ${
+                                        transaction.toAccount?.name ??
+                                        "Unknown destination"
+                                    }`
+                                    : transaction.account.name;
+
                                 return (
                                     <tr
                                         key={transaction.id}
                                         className="transition hover:bg-slate-50"
                                     >
+                                        {/* Transaction details */}
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div
                                                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold ${
                                                         isIncome
                                                             ? "bg-emerald-50 text-emerald-700"
-                                                            : "bg-slate-100 text-slate-600"
+                                                            : isTransfer
+                                                                ? "bg-blue-50 text-blue-700"
+                                                                : "bg-slate-100 text-slate-600"
                                                     }`}
                                                 >
                                                     {isIncome
@@ -358,27 +413,39 @@ async function TransactionsContent({
                                                     <p className="mt-1 text-xs capitalize text-slate-500">
                                                         {transaction.type.toLowerCase()}
                                                     </p>
+
+                                                    {isTransfer && (
+                                                        <p className="mt-1 text-xs text-slate-500">
+                                                            {accountDisplay}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
 
+                                        {/* Date */}
                                         <td className="px-6 py-4 text-sm text-slate-600">
                                             {formatDate(transaction.date)}
                                         </td>
 
+                                        {/* Category */}
                                         <td className="px-6 py-4 text-sm text-slate-600">
                                             {transaction.category}
                                         </td>
 
+                                        {/* Source / destination */}
                                         <td className="px-6 py-4 text-sm text-slate-600">
-                                            {transaction.account.name}
+                                            {accountDisplay}
                                         </td>
 
+                                        {/* Amount */}
                                         <td
                                             className={`px-6 py-4 text-right text-sm font-semibold ${
                                                 isIncome
                                                     ? "text-emerald-700"
-                                                    : "text-slate-900"
+                                                    : isTransfer
+                                                        ? "text-blue-700"
+                                                        : "text-slate-900"
                                             }`}
                                         >
                                             {isIncome
@@ -393,7 +460,7 @@ async function TransactionsContent({
                                             )}
                                         </td>
 
-                                        {/* Edit and Delete buttons */}
+                                        {/* Actions */}
                                         <td className="px-6 py-4 text-right">
                                             {isTransfer ? (
                                                 <span className="text-xs text-slate-400">

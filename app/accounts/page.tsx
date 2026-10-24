@@ -152,8 +152,7 @@ async function AccountsContent() {
                                     </div>
                                 </div>
 
-
-
+                                {/* Account actions */}
                                 <div className="mt-6 flex flex-wrap items-center gap-3">
                                     <Link
                                         href={`/transactions?account=${encodeURIComponent(
@@ -178,8 +177,6 @@ async function AccountsContent() {
                                         Delete Account
                                     </Link>
                                 </div>
-
-
                             </div>
                         ))}
                     </div>
@@ -200,7 +197,7 @@ export default function AccountsPage() {
                     ← Back to dashboard
                 </Link>
 
-
+                {/* Page header */}
                 <div className="mt-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
@@ -212,15 +209,25 @@ export default function AccountsPage() {
                         </p>
                     </div>
 
-                    <Link
-                        href="/accounts/new"
-                        className="w-fit rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
-                    >
-                        + Add Account
-                    </Link>
+                    {/* Header actions */}
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Link
+                            href="/transfers/new"
+                            className="inline-flex items-center justify-center rounded-xl border border-emerald-600 bg-white px-5 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50"
+                        >
+                            Transfer Money
+                        </Link>
+
+                        <Link
+                            href="/accounts/new"
+                            className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                        >
+                            + Add Account
+                        </Link>
+                    </div>
                 </div>
 
-
+                {/* Accounts content */}
                 <Suspense
                     fallback={
                         <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">
