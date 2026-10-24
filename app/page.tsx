@@ -2,6 +2,7 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 
+
 const navigation = [
   { label: "Overview", icon: "◫", href: "/", active: true },
   { label: "Transactions", icon: "↕", href: "/transactions", active: false },
