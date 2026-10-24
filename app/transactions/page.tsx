@@ -14,7 +14,10 @@ type PageProps = {
     searchParams: Promise<FilterParams>;
 };
 
-function formatMoney(amount: number | string, currency = "USD") {
+function formatMoney(
+    amount: number | string,
+    currency = "USD",
+) {
     return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency,
@@ -109,16 +112,22 @@ async function TransactionsContent({
     ]);
 
     const income = transactions
-        .filter((transaction) => transaction.type === "INCOME")
+        .filter(
+            (transaction) => transaction.type === "INCOME",
+        )
         .reduce(
-            (sum, transaction) => sum + Number(transaction.amount),
+            (sum, transaction) =>
+                sum + Number(transaction.amount),
             0,
         );
 
     const expenses = transactions
-        .filter((transaction) => transaction.type === "EXPENSE")
+        .filter(
+            (transaction) => transaction.type === "EXPENSE",
+        )
         .reduce(
-            (sum, transaction) => sum + Number(transaction.amount),
+            (sum, transaction) =>
+                sum + Number(transaction.amount),
             0,
         );
 
@@ -181,7 +190,9 @@ async function TransactionsContent({
                         id="account"
                         name="account"
                         defaultValue={
-                            accounts.some((account) => account.id === accountId)
+                            accounts.some(
+                                (account) => account.id === accountId,
+                            )
                                 ? accountId
                                 : "ALL"
                         }
@@ -190,7 +201,10 @@ async function TransactionsContent({
                         <option value="ALL">All accounts</option>
 
                         {accounts.map((account) => (
-                            <option key={account.id} value={account.id}>
+                            <option
+                                key={account.id}
+                                value={account.id}
+                            >
                                 {account.name}
                             </option>
                         ))}
@@ -278,7 +292,7 @@ async function TransactionsContent({
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[900px] text-left">
+                        <table className="w-full min-w-[980px] text-left">
                             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                             <tr>
                                 <th className="px-6 py-4 font-semibold">
@@ -379,18 +393,28 @@ async function TransactionsContent({
                                             )}
                                         </td>
 
+                                        {/* Edit and Delete buttons */}
                                         <td className="px-6 py-4 text-right">
                                             {isTransfer ? (
                                                 <span className="text-xs text-slate-400">
                             Not editable
                           </span>
                                             ) : (
-                                                <Link
-                                                    href={`/transactions/${transaction.id}/edit`}
-                                                    className="inline-flex rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50"
-                                                >
-                                                    Edit
-                                                </Link>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Link
+                                                        href={`/transactions/${transaction.id}/edit`}
+                                                        className="inline-flex rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50"
+                                                    >
+                                                        Edit
+                                                    </Link>
+
+                                                    <Link
+                                                        href={`/transactions/${transaction.id}/delete`}
+                                                        className="inline-flex rounded-lg border border-red-200 px-4 py-2 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50"
+                                                    >
+                                                        Delete
+                                                    </Link>
+                                                </div>
                                             )}
                                         </td>
                                     </tr>
