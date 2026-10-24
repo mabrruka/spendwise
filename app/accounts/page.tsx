@@ -152,14 +152,25 @@ async function AccountsContent() {
                                     </div>
                                 </div>
 
-                                <Link
-                                    href={`/transactions?account=${encodeURIComponent(
-                                        account.id,
-                                    )}`}
-                                    className="mt-6 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-800"
-                                >
-                                    View transactions →
-                                </Link>
+
+                                <div className="mt-6 flex flex-wrap items-center gap-3">
+                                    <Link
+                                        href={`/transactions?account=${encodeURIComponent(
+                                            account.id,
+                                        )}`}
+                                        className="inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                                    >
+                                        View transactions
+                                    </Link>
+
+                                    <Link
+                                        href={`/accounts/${account.id}/edit`}
+                                        className="inline-flex rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+                                    >
+                                        Edit Account
+                                    </Link>
+                                </div>
+
                             </div>
                         ))}
                     </div>
