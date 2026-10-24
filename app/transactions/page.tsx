@@ -124,6 +124,7 @@ async function TransactionsContent({
 
     return (
         <>
+            {/* Search and filters */}
             <form
                 action="/transactions"
                 method="GET"
@@ -213,6 +214,7 @@ async function TransactionsContent({
                 </div>
             </form>
 
+            {/* Summary cards */}
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="rounded-2xl border border-slate-200 bg-white p-5">
                     <p className="text-sm text-slate-500">
@@ -245,6 +247,7 @@ async function TransactionsContent({
                 </div>
             </div>
 
+            {/* Transactions table */}
             <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-100 px-6 py-5">
                     <h2 className="font-bold">
@@ -275,7 +278,7 @@ async function TransactionsContent({
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full min-w-[760px] text-left">
+                        <table className="w-full min-w-[900px] text-left">
                             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                             <tr>
                                 <th className="px-6 py-4 font-semibold">
@@ -296,6 +299,10 @@ async function TransactionsContent({
 
                                 <th className="px-6 py-4 text-right font-semibold">
                                     Amount
+                                </th>
+
+                                <th className="px-6 py-4 text-right font-semibold">
+                                    Actions
                                 </th>
                             </tr>
                             </thead>
@@ -371,6 +378,21 @@ async function TransactionsContent({
                                                 transaction.account.currency,
                                             )}
                                         </td>
+
+                                        <td className="px-6 py-4 text-right">
+                                            {isTransfer ? (
+                                                <span className="text-xs text-slate-400">
+                            Not editable
+                          </span>
+                                            ) : (
+                                                <Link
+                                                    href={`/transactions/${transaction.id}/edit`}
+                                                    className="inline-flex rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-50"
+                                                >
+                                                    Edit
+                                                </Link>
+                                            )}
+                                        </td>
                                     </tr>
                                 );
                             })}
@@ -411,7 +433,7 @@ export default function TransactionsPage({
                         </h1>
 
                         <p className="mt-2 text-sm text-slate-500">
-                            Search and filter your financial activity.
+                            Search, filter, and manage your financial activity.
                         </p>
                     </div>
 
