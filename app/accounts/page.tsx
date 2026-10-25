@@ -1,7 +1,9 @@
 
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/require-user";
 
 function formatMoney(
     amount: number | string,
@@ -14,11 +16,18 @@ function formatMoney(
 }
 
 async function AccountsContent() {
+    // Next.js 16: perform authentication and database
+    // queries at request time, not during prerendering.
+    await connection();
+
+    // Get the currently signed-in user's ID.
+    // Redirect to /signin if the user is not authenticated.
+    const userId = await requireUser();
+
+    // Only retrieve accounts belonging to this user.
     const accounts = await prisma.account.findMany({
         where: {
-            user: {
-                email: "demo@spendwise.local",
-            },
+            userId,
         },
         include: {
             _count: {
@@ -95,6 +104,13 @@ async function AccountsContent() {
                         <p className="mt-2 text-sm text-slate-500">
                             Your accounts will appear here once they are created.
                         </p>
+
+                        <Link
+                            href="/accounts/new"
+                            className="mt-5 inline-flex rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                        >
+                            + Create your first account
+                        </Link>
                     </div>
                 ) : (
                     <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -105,9 +121,7 @@ async function AccountsContent() {
                             >
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-sm font-bold text-emerald-700">
-                                        {account.name
-                                            .slice(0, 2)
-                                            .toUpperCase()}
+                                        {account.name.slice(0, 2).toUpperCase()}
                                     </div>
 
                                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
@@ -191,7 +205,7 @@ export default function AccountsPage() {
         <main className="min-h-screen bg-[#f7f8fa] px-5 py-10 text-slate-900">
             <div className="mx-auto max-w-6xl">
                 <Link
-                    href="/"
+                    href="/dashboard"
                     className="text-sm font-semibold text-emerald-700 hover:text-emerald-800"
                 >
                     ← Back to dashboard
@@ -227,7 +241,7 @@ export default function AccountsPage() {
                     </div>
                 </div>
 
-                {/* Accounts content */}
+                {/* Protected accounts content */}
                 <Suspense
                     fallback={
                         <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500">

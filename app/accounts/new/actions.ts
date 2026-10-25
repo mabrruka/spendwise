@@ -5,10 +5,15 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/require-user";
 
 export async function createAccount(formData: FormData) {
+    // Require a signed-in user before creating an account.
+    const userId = await requireUser();
+
     const name = String(formData.get("name") ?? "").trim();
     const type = String(formData.get("type") ?? "").trim();
+
     const currency = String(
         formData.get("currency") ?? "",
     )
@@ -47,9 +52,7 @@ export async function createAccount(formData: FormData) {
     }
 
     // Validate the opening balance.
-    if (
-        !/^-?\d+(\.\d{1,2})?$/.test(openingBalanceInput)
-    ) {
+    if (!/^-?\d+(\.\d{1,2})?$/.test(openingBalanceInput)) {
         throw new Error(
             "Opening balance must be a valid amount with up to two decimal places.",
         );
@@ -69,33 +72,19 @@ export async function createAccount(formData: FormData) {
         );
     }
 
-    // Find the current demo user.
-    const demoUser = await prisma.user.findUnique({
-        where: {
-            email: "demo@spendwise.local",
-        },
-        select: {
-            id: true,
-        },
-    });
-
-    if (!demoUser) {
-        throw new Error("Demo user not found.");
-    }
-
-    // Create the account in PostgreSQL.
+    // Create the account for the authenticated user.
     await prisma.account.create({
         data: {
             name,
             type,
             currency,
             balance: openingBalance,
-            userId: demoUser.id,
+            userId,
         },
     });
 
     // Refresh pages that display account information.
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/accounts");
     revalidatePath("/transactions");
     revalidatePath("/transactions/new");
