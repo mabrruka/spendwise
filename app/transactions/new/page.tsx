@@ -1,10 +1,17 @@
 
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createTransaction } from "./actions";
+import CategoryFields from "./CategoryFields";
 
 async function TransactionForm() {
+    // Calculate today's date only after an incoming request.
+    await connection();
+
+    const today = new Date().toISOString().slice(0, 10);
+
     const accounts = await prisma.account.findMany({
         where: {
             user: {
@@ -66,44 +73,7 @@ async function TransactionForm() {
                 />
             </div>
 
-            <div>
-                <label
-                    htmlFor="type"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
-                >
-                    Transaction type
-                </label>
-
-                <select
-                    id="type"
-                    name="type"
-                    defaultValue="EXPENSE"
-                    required
-                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-emerald-500"
-                >
-                    <option value="EXPENSE">Expense</option>
-                    <option value="INCOME">Income</option>
-                </select>
-            </div>
-
-            <div>
-                <label
-                    htmlFor="category"
-                    className="mb-2 block text-sm font-semibold text-slate-700"
-                >
-                    Category
-                </label>
-
-                <input
-                    id="category"
-                    name="category"
-                    type="text"
-                    placeholder="e.g. Food & groceries"
-                    maxLength={80}
-                    required
-                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500"
-                />
-            </div>
+            <CategoryFields />
 
             <div>
                 <label
@@ -117,7 +87,7 @@ async function TransactionForm() {
                     id="date"
                     name="date"
                     type="date"
-                    defaultValue={new Date().toISOString().slice(0, 10)}
+                    defaultValue={today}
                     required
                     className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-emerald-500"
                 />

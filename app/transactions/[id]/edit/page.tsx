@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { updateTransaction } from "./actions";
+import EditCategoryFields from "./EditCategoryFields";
 
 type EditTransactionPageProps = {
     params: Promise<{
@@ -73,6 +74,7 @@ async function EditTransactionForm({
                 action={updateTransaction.bind(null, transaction.id)}
                 className="space-y-6"
             >
+                {/* Title */}
                 <div>
                     <label
                         htmlFor="title"
@@ -86,78 +88,42 @@ async function EditTransactionForm({
                         name="title"
                         type="text"
                         required
+                        maxLength={120}
                         defaultValue={transaction.title}
                         placeholder="e.g. Grocery shopping"
                         className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-emerald-500"
                     />
                 </div>
 
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div>
-                        <label
-                            htmlFor="amount"
-                            className="mb-2 block text-sm font-semibold text-slate-700"
-                        >
-                            Amount
-                        </label>
-
-                        <input
-                            id="amount"
-                            name="amount"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            required
-                            defaultValue={transaction.amount.toString()}
-                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-emerald-500"
-                        />
-                    </div>
-
-                    <div>
-                        <label
-                            htmlFor="type"
-                            className="mb-2 block text-sm font-semibold text-slate-700"
-                        >
-                            Type
-                        </label>
-
-                        <select
-                            id="type"
-                            name="type"
-                            required
-                            defaultValue={transaction.type}
-                            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-500"
-                        >
-                            <option value="INCOME">
-                                Income
-                            </option>
-
-                            <option value="EXPENSE">
-                                Expense
-                            </option>
-                        </select>
-                    </div>
-                </div>
-
+                {/* Amount */}
                 <div>
                     <label
-                        htmlFor="category"
+                        htmlFor="amount"
                         className="mb-2 block text-sm font-semibold text-slate-700"
                     >
-                        Category
+                        Amount
                     </label>
 
                     <input
-                        id="category"
-                        name="category"
-                        type="text"
+                        id="amount"
+                        name="amount"
+                        type="number"
+                        min="0.01"
+                        max="999999999999.99"
+                        step="0.01"
                         required
-                        defaultValue={transaction.category}
-                        placeholder="e.g. Food"
+                        defaultValue={transaction.amount.toString()}
                         className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-emerald-500"
                     />
                 </div>
 
+                {/* Type and category */}
+                <EditCategoryFields
+                    initialType={transaction.type}
+                    initialCategory={transaction.category}
+                />
+
+                {/* Date */}
                 <div>
                     <label
                         htmlFor="date"
@@ -171,11 +137,14 @@ async function EditTransactionForm({
                         name="date"
                         type="date"
                         required
-                        defaultValue={formatDateForInput(transaction.date)}
+                        defaultValue={formatDateForInput(
+                            transaction.date,
+                        )}
                         className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-emerald-500"
                     />
                 </div>
 
+                {/* Account */}
                 <div>
                     <label
                         htmlFor="accountId"
@@ -192,13 +161,17 @@ async function EditTransactionForm({
                         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-500"
                     >
                         {accounts.map((account) => (
-                            <option key={account.id} value={account.id}>
+                            <option
+                                key={account.id}
+                                value={account.id}
+                            >
                                 {account.name} ({account.currency})
                             </option>
                         ))}
                     </select>
                 </div>
 
+                {/* Actions */}
                 <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-6">
                     <button
                         type="submit"
