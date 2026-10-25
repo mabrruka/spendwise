@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,14 +15,16 @@ enum TransactionType {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   accounts     Account[]
   transactions Transaction[]
+  budgets      Budget[]
 }
 
 model Account {
@@ -34,7 +37,7 @@ model Account {
   updatedAt DateTime @updatedAt
 
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Income, expenses, and outgoing transfers
   transactions Transaction[] @relation("SourceAccount")
@@ -57,7 +60,7 @@ model Transaction {
   updatedAt   DateTime        @updatedAt
 
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Source account
   accountId String
@@ -70,4 +73,19 @@ model Transaction {
   @@index([userId, date])
   @@index([accountId, date])
   @@index([toAccountId, date])
+}
+
+model Budget {
+  id        String   @id @default(cuid())
+  category  String
+  amount    Decimal  @db.Decimal(14, 2)
+  month     DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category, month])
+  @@index([userId, month])
 }
