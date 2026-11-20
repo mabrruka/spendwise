@@ -3,20 +3,19 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/require-user";
 import { createTransaction } from "./actions";
 import CategoryFields from "./CategoryFields";
 
 async function TransactionForm() {
-    // Calculate today's date only after an incoming request.
     await connection();
 
+    const userId = await requireUser();
     const today = new Date().toISOString().slice(0, 10);
 
     const accounts = await prisma.account.findMany({
         where: {
-            user: {
-                email: "demo@spendwise.local",
-            },
+            userId,
         },
         orderBy: {
             name: "asc",
@@ -121,8 +120,8 @@ async function TransactionForm() {
 
                 {accounts.length === 0 && (
                     <p className="mt-2 text-sm text-amber-700">
-                        No accounts are available. Create an account before adding
-                        transactions.
+                        No accounts are available. Create an account before
+                        adding transactions.
                     </p>
                 )}
             </div>
@@ -137,7 +136,7 @@ async function TransactionForm() {
                 </button>
 
                 <Link
-                    href="/"
+                    href="/dashboard"
                     className="rounded-xl border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                     Cancel
@@ -158,7 +157,7 @@ export default function NewTransactionPage() {
         <main className="min-h-screen bg-[#f7f8fa] px-5 py-10 text-slate-900">
             <div className="mx-auto max-w-2xl">
                 <Link
-                    href="/"
+                    href="/dashboard"
                     className="text-sm font-semibold text-emerald-700 hover:text-emerald-800"
                 >
                     ← Back to dashboard

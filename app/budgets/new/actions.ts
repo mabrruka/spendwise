@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/require-user";
 
 const EXPENSE_CATEGORIES = [
     "Groceries",
@@ -19,6 +20,8 @@ const EXPENSE_CATEGORIES = [
 ];
 
 export async function createBudget(formData: FormData) {
+    const userId = await requireUser();
+
     const category = String(
         formData.get("category") ?? "",
     ).trim();
@@ -74,45 +77,13 @@ export async function createBudget(formData: FormData) {
         Date.UTC(year, monthNumber - 1, 1),
     );
 
-    const user = await prisma.user.findUnique({
-        where: {
-            email: "demo@spendwise.local",
-        },
-        select: {
-            id: true,
-        },
-    });
-
-    if (!user) {
-        throw new Error("Demo user not found.");
-    }
-
-    const existingBudget = await prisma.budget.findUnique({
-        where: {
-            userId_category_month: {
-                userId: user.id,
-                category,
-                month,
-            },
-        },
-        select: {
-            id: true,
-        },
-    });
-
-    if (existingBudget) {
-        throw new Error(
-            "A budget already exists for this category and month.",
-        );
-    }
-
     try {
         await prisma.budget.create({
             data: {
                 category,
                 amount,
                 month,
-                userId: user.id,
+                userId,
             },
         });
     } catch (error) {
@@ -129,6 +100,7 @@ export async function createBudget(formData: FormData) {
     }
 
     revalidatePath("/budgets");
+    revalidatePath("/dashboard");
 
     redirect(`/budgets?month=${monthInput}`);
 }

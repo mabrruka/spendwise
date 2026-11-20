@@ -38,8 +38,11 @@ export async function createTransaction(formData: FormData) {
 
     const amount = new Prisma.Decimal(amountInput);
 
-    if (amount.lte(0)) {
-        throw new Error("Amount must be greater than zero.");
+    if (
+        amount.lte(0) ||
+        amount.greaterThan("999999999999.99")
+    ) {
+        throw new Error("Amount is outside the supported range.");
     }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
@@ -92,6 +95,7 @@ export async function createTransaction(formData: FormData) {
         });
     });
 
+    revalidatePath("/");
     revalidatePath("/dashboard");
     revalidatePath("/accounts");
     revalidatePath("/transactions");
