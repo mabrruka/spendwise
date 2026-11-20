@@ -68,7 +68,9 @@ async function BudgetsContent({
     // the current month. Required for Next.js 16.
     await connection();
 
-    const params = await searchParams;
+
+    const params = (await searchParams) ?? {};
+
 
     const currentMonth = new Date()
         .toISOString()

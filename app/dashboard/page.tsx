@@ -157,11 +157,23 @@ async function DashboardContent() {
   const session = await auth();
   const userId = session?.user?.id;
 
+
   if (!userId) {
     redirect("/signin");
   }
 
+  // Check whether the user has completed financial onboarding.
+  const financialProfile = await prisma.financialProfile.findUnique({
+    where: { userId },
+    select: { onboardingCompleted: true },
+  });
+
+  if (!financialProfile?.onboardingCompleted) {
+    redirect("/onboarding");
+  }
+
   const now = new Date();
+
 
   const monthStart = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
