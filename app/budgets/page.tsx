@@ -5,8 +5,8 @@ import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 type BudgetsPageProps = {
-    searchParams: Promise<{
-        month?: string | string[];
+    searchParams?: Promise<{
+        [key: string]: string | string[] | undefined;
     }>;
 };
 
@@ -464,7 +464,9 @@ export default function BudgetsPage({
                         </div>
                     }
                 >
-                    <BudgetsContent searchParams={searchParams} />
+                    <BudgetsContent
+                        searchParams={searchParams ?? Promise.resolve({})}
+                    />
                 </Suspense>
             </div>
         </main>

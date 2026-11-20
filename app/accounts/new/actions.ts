@@ -92,3 +92,4 @@ export async function createAccount(formData: FormData) {
     // Return to the Accounts page.
     redirect("/accounts");
 }
+

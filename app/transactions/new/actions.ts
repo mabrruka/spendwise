@@ -5,8 +5,11 @@ import { Prisma, TransactionType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/require-user";
 
 export async function createTransaction(formData: FormData) {
+    const userId = await requireUser();
+
     const title = String(formData.get("title") ?? "").trim();
     const amountInput = String(formData.get("amount") ?? "").trim();
     const typeInput = String(formData.get("type") ?? "");
@@ -25,8 +28,12 @@ export async function createTransaction(formData: FormData) {
         throw new Error("Invalid transaction type.");
     }
 
+    const type = typeInput as TransactionType;
+
     if (!/^\d+(\.\d{1,2})?$/.test(amountInput)) {
-        throw new Error("Enter a valid amount with up to two decimal places.");
+        throw new Error(
+            "Enter a valid amount with up to two decimal places.",
+        );
     }
 
     const amount = new Prisma.Decimal(amountInput);
@@ -49,51 +56,46 @@ export async function createTransaction(formData: FormData) {
     }
 
     await prisma.$transaction(async (tx) => {
-        const account = await tx.account.findUnique({
-            where: { id: accountId },
+        const account = await tx.account.findFirst({
+            where: {
+                id: accountId,
+                userId,
+            },
         });
 
         if (!account) {
             throw new Error("The selected account does not exist.");
         }
 
-        // Until authentication is added, this demo form is restricted
-        // to the dedicated demo user's accounts.
-        const demoUser = await tx.user.findUnique({
-            where: { email: "demo@spendwise.local" },
-            select: { id: true },
-        });
-
-        if (!demoUser || account.userId !== demoUser.id) {
-            throw new Error("This account is not available.");
-        }
-
         await tx.transaction.create({
             data: {
                 title,
                 amount,
-                type: typeInput,
+                type,
                 category,
                 date,
                 accountId: account.id,
-                userId: demoUser.id,
+                userId,
             },
         });
 
         await tx.account.update({
-            where: { id: account.id },
+            where: {
+                id: account.id,
+            },
             data: {
                 balance:
-                    typeInput === TransactionType.INCOME
+                    type === TransactionType.INCOME
                         ? { increment: amount }
                         : { decrement: amount },
             },
         });
     });
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
+    revalidatePath("/accounts");
     revalidatePath("/transactions");
     revalidatePath("/transactions/new");
 
-    redirect("/");
+    redirect("/dashboard");
 }

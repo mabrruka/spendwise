@@ -1,20 +1,17 @@
 
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/require-user";
 import { deleteAccount } from "./actions";
 
 type DeleteAccountPageProps = {
-    params: Promise<{
-        id: string;
-    }>;
+    params: Promise<{ id: string }>;
 };
 
-function formatMoney(
-    amount: string,
-    currency: string,
-) {
+function formatMoney(amount: string, currency: string) {
     return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency,
@@ -24,14 +21,15 @@ function formatMoney(
 async function DeleteAccountConfirmation({
                                              params,
                                          }: DeleteAccountPageProps) {
+    await connection();
+
+    const userId = await requireUser();
     const { id } = await params;
 
     const account = await prisma.account.findFirst({
         where: {
             id,
-            user: {
-                email: "demo@spendwise.local",
-            },
+            userId,
         },
     });
 
@@ -39,28 +37,19 @@ async function DeleteAccountConfirmation({
         notFound();
     }
 
-    // Count every transaction involving this account.
-    // This includes outgoing transactions and incoming transfers.
     const transactionCount = await prisma.transaction.count({
         where: {
-            userId: account.userId,
+            userId,
             OR: [
-                {
-                    accountId: account.id,
-                },
-                {
-                    toAccountId: account.id,
-                },
+                { accountId: account.id },
+                { toAccountId: account.id },
             ],
         },
     });
 
     const hasTransactions = transactionCount > 0;
 
-    const deleteAction = deleteAccount.bind(
-        null,
-        account.id,
-    );
+    const deleteAction = deleteAccount.bind(null, account.id);
 
     return (
         <div className="mt-8 max-w-2xl">
@@ -70,37 +59,25 @@ async function DeleteAccountConfirmation({
                 </h2>
 
                 <p className="mt-3 text-sm leading-6 text-slate-600">
-                    Deleting an account permanently removes it from
-                    Spendwise. This action cannot be undone.
+                    Deleting an account permanently removes it from Spendwise.
+                    This action cannot be undone.
                 </p>
 
-                {/* Account details */}
                 <div className="mt-6 space-y-4 rounded-xl bg-slate-50 p-5">
                     <div className="flex justify-between gap-4">
-            <span className="text-sm text-slate-500">
-              Account
-            </span>
-
+                        <span className="text-sm text-slate-500">Account</span>
                         <span className="text-right text-sm font-semibold">
               {account.name}
             </span>
                     </div>
 
                     <div className="flex justify-between gap-4">
-            <span className="text-sm text-slate-500">
-              Type
-            </span>
-
-                        <span className="text-sm font-semibold">
-              {account.type}
-            </span>
+                        <span className="text-sm text-slate-500">Type</span>
+                        <span className="text-sm font-semibold">{account.type}</span>
                     </div>
 
                     <div className="flex justify-between gap-4">
-            <span className="text-sm text-slate-500">
-              Currency
-            </span>
-
+                        <span className="text-sm text-slate-500">Currency</span>
                         <span className="text-sm font-semibold">
               {account.currency}
             </span>
@@ -110,12 +87,8 @@ async function DeleteAccountConfirmation({
             <span className="text-sm text-slate-500">
               Current balance
             </span>
-
                         <span className="text-sm font-semibold">
-              {formatMoney(
-                  account.balance.toString(),
-                  account.currency,
-              )}
+              {formatMoney(account.balance.toString(), account.currency)}
             </span>
                     </div>
 
@@ -123,7 +96,6 @@ async function DeleteAccountConfirmation({
             <span className="text-sm text-slate-500">
               Transactions and transfers
             </span>
-
                         <span className="text-sm font-semibold">
               {transactionCount}
             </span>
@@ -132,7 +104,6 @@ async function DeleteAccountConfirmation({
 
                 {hasTransactions ? (
                     <>
-                        {/* Deletion blocked */}
                         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
                             <h3 className="text-sm font-bold text-amber-900">
                                 This account cannot be deleted
@@ -140,24 +111,17 @@ async function DeleteAccountConfirmation({
 
                             <p className="mt-2 text-sm leading-6 text-amber-800">
                                 This account is involved in{" "}
-                                <strong>
-                                    {transactionCount}
-                                </strong>{" "}
-                                transaction
-                                {transactionCount === 1 ? "" : "s"} or
-                                transfer
-                                {transactionCount === 1 ? "" : "s"}.
-                                To protect your financial history,
-                                Spendwise does not allow deleting
-                                accounts with existing financial activity.
+                                <strong>{transactionCount}</strong>{" "}
+                                transaction{transactionCount === 1 ? "" : "s"} or
+                                transfer{transactionCount === 1 ? "" : "s"}.
+                                To protect your financial history, accounts with
+                                existing financial activity cannot be deleted.
                             </p>
                         </div>
 
                         <div className="mt-6 flex flex-wrap gap-3">
                             <Link
-                                href={`/transactions?account=${encodeURIComponent(
-                                    account.id,
-                                )}`}
+                                href={`/transactions?account=${encodeURIComponent(account.id)}`}
                                 className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
                             >
                                 View transactions
@@ -173,30 +137,25 @@ async function DeleteAccountConfirmation({
                     </>
                 ) : (
                     <>
-                        {/* Deletion permitted */}
                         <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5">
                             <h3 className="text-sm font-bold text-red-900">
                                 Permanent deletion
                             </h3>
 
                             <p className="mt-2 text-sm leading-6 text-red-800">
-                                This account has no transactions or
-                                transfers and can be deleted. Its current
-                                balance of{" "}
+                                This account has no transactions or transfers and can
+                                be deleted. Its current balance of{" "}
                                 <strong>
                                     {formatMoney(
                                         account.balance.toString(),
-                                        account.currency,
+                                        account.currency
                                     )}
                                 </strong>{" "}
                                 will be removed from your account totals.
                             </p>
                         </div>
 
-                        <form
-                            action={deleteAction}
-                            className="mt-6 space-y-5"
-                        >
+                        <form action={deleteAction} className="mt-6 space-y-5">
                             <div>
                                 <label
                                     htmlFor="confirmation"
@@ -263,8 +222,7 @@ export default function DeleteAccountPage({
                     </h1>
 
                     <p className="mt-2 text-sm text-slate-500">
-                        Review the account before permanently
-                        deleting it.
+                        Review the account before permanently deleting it.
                     </p>
                 </div>
 
